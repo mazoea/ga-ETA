@@ -7,4 +7,4 @@ COPY main.py /app/main.py
 
 WORKDIR /app
 ENV PYTHONPATH /app
-CMD ["/app/main.py"]
+CMD ["python3", "/app/main.py"]
