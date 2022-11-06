@@ -9,9 +9,10 @@ if __name__ == "__main__":
 
     token = ctx["token"]
     del ctx["token"]
+    print(ctx)
+
     repo = ctx["repository"]
     pr_number = ctx["event"]["number"]
-    print(ctx)
 
     g = Github(token)
     repo = g.get_repo(repo)
