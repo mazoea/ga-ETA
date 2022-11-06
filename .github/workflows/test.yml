@@ -1,0 +1,10 @@
+on: push
+name: Test
+jobs:
+  add_label:
+    runs-on: mazoea-linux
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
