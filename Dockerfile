@@ -3,8 +3,10 @@ COPY requirements.txt  /tmp
 RUN pip3 install -r /tmp/requirements.txt --no-cache-dir && \
     rm /tmp/requirements.txt
 
-COPY main.py /app
+COPY prtime.py /app/prtime.py
+COPY main.py /app/main.py
 
 WORKDIR /app
 ENV PYTHONPATH /app
-CMD ["/app/main.py"]
+
+CMD ["python3", "/app/main.py"]

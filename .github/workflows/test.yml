@@ -1,10 +1,17 @@
-on: push
+on:
+  push:
+  workflow_dispatch:
+  pull_request:
+    types: [review_requested, edited]
+  pull_request_review:
+    types: [submitted]
+
 name: Test
 jobs:
-  add_label:
-    runs-on: mazoea-linux
+  test:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: ./
       with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CONTEXT_GITHUB: ${{ toJson(github) }}
