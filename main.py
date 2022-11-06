@@ -1,6 +1,20 @@
+from github import Github
 import os
+import json
 
 
 if __name__ == "__main__":
-    gh_token = os.environ["INPUT_GITHUB_TOKEN"]
-    print(gh_token[:10])
+
+    ctx = json.loads(os.getenv("INPUT_CONTEXT_GITHUB"))
+
+    token = ctx["token"]
+    del ctx["token"]
+    repo = ctx["repository"]
+    pr_number = ctx["event"]["number"]
+    print(ctx)
+
+    g = Github(token)
+    repo = g.get_repo(repo)
+    issue = repo.get_issue(number=pr_number)
+    title = issue.title
+    print(title)

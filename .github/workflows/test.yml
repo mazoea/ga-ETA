@@ -10,4 +10,4 @@ jobs:
     - uses: actions/checkout@v3
     - uses: ./
       with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CONTEXT_GITHUB: ${{ toJson(github) }}

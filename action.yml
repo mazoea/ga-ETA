@@ -1,7 +1,7 @@
 name: 'ETA-PRs'
 description: 'Store&parse timetracking in PRs'
 inputs:
-  GITHUB_TOKEN:
+  CONTEXT_GITHUB:
     required: true
 runs:
   using: 'docker'
