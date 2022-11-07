@@ -60,8 +60,8 @@ if __name__ == "__main__":
 
     repo_name = ctx["repository"]
     e_name = ctx["event_name"]
-    opt_pr_d = ctx.get("pull_request", {})
 
+    opt_pr_d = e.get("pull_request", {})
     e_action = e.get("action", "")
     e_number = e.get("number", -1)
 
