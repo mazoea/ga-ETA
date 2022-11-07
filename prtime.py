@@ -224,7 +224,7 @@ class eta_table:
         errors = []
         valid = True
 
-        def _add_error(s: str): errors.append("%s%s" % (ETA.label_prefix, s))
+        def _add_error(s: str): errors.append("%s%s" % (eta_table.label_prefix, s))
 
         if self.total_reported == 0:
             _logger.critical("Total reported is 0!")

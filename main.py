@@ -26,7 +26,7 @@ if __name__ == "__main__":
     review_state = e.get("review", {}).get("state", "")
     if review_state == "approved":
         print("APPROVED")
-        
+
     if e_name == "pull_request" and e_action == "edited":
         print("PR edited!")
         pr = repo.get_issue(number=e_number)
@@ -34,12 +34,13 @@ if __name__ == "__main__":
 
         # get labels but without ETA related errors
         labels = pr.get_labels()
-        label_names = [x.name for x in labels if x.name.startswith(prtime.ETA.label_prefix)]
+        label_names = [x.name for x in labels if x.name.startswith(
+            prtime.eta_table.label_prefix)]
 
         # parse eta
         eta = prtime.parse_eta(pr, pr_id)
         print("ETA: [%s]" % str(eta.d))
-        
+
         exit = 0
 
         # validate
@@ -48,14 +49,13 @@ if __name__ == "__main__":
         else:
             err, err_labels = eta.validate_hours()
             label_names += err_labels
-            if err: 
+            if err:
                 exit = 2
-            
+
         # set new labels
         pr.set_labels(*label_names)
 
         sys.exit(exit)
-        
+
     if e_action == "review_requested":
         print("REVIEW requested!")
-
