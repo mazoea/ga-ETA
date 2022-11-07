@@ -1,6 +1,9 @@
 import os
 import sys
 import json
+import logging
+logging.getLogger().addHandler(logging.StreamHandler())
+
 from github import Github
 import prtime
 
@@ -34,8 +37,9 @@ if __name__ == "__main__":
 
         # get labels but without ETA related errors
         labels = pr.get_labels()
-        label_names = [x.name for x in labels if x.name.startswith(
+        label_names = [x.name for x in labels if not x.name.startswith(
             prtime.eta_table.label_prefix)]
+        print("Current labels: [%s]" % label_names)
 
         # parse eta
         eta = prtime.parse_eta(pr, pr_id)
