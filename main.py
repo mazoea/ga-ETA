@@ -2,7 +2,9 @@ import os
 import sys
 import json
 import logging
-logging.getLogger().addHandler(logging.StreamHandler())
+str_hdlr = logging.StreamHandler(sys.stdout)
+str_hdlr.setLevel(logging.INFO)
+logging.getLogger().addHandler(str_hdlr)
 
 from github import Github
 import prtime
