@@ -54,9 +54,9 @@ if __name__ == "__main__":
     del ctx["token"]
 
     e = ctx["event"]
-    print("event:\n%s" % json.dumps(e, indent=2))
+    # print("event:\n%s" % json.dumps(e, indent=2))
     del ctx["event"]
-    print("edited context:\n%s" % json.dumps(ctx, indent=2))
+    # print("edited context:\n%s" % json.dumps(ctx, indent=2))
 
     repo_name = ctx["repository"]
     e_name = ctx["event_name"]

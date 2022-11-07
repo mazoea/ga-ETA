@@ -84,7 +84,7 @@ def log_err(msg, pr, pr_id):
 
 def sum_hours(s, pr_id):
     """
-        Try to sum the cells.
+        Try to sum the cell.
     """
     try:
         return float(eval(s))
@@ -99,7 +99,7 @@ def get_pr_id(repo_name, pr):
 
 class eta_row:
     """
-        ETA table row.
+        Row of an ETA
     """
 
     def __init__(self, arr, pr_id):
@@ -302,12 +302,12 @@ def parse_eta(pr, pr_id):
 
 def pr_with_eta(gh, start_at, state=None, base=None):
     """
-        Iterate over PRs with ETA table.
 
-        :param gh:
-        :param start_at:
-        :param state: "all", "closed"
-        :return:
+
+    :param gh:
+    :param start_at:
+    :param state: "all", "closed"
+    :return:
     """
 
     rec_pr_time = re.compile(r"[|]\s*ETA")
