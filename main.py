@@ -8,6 +8,42 @@ from github import Github
 import prtime
 
 
+def validate(repo_name: str, pr_number: int):
+    """
+        Validate PR ETA table if present.
+    """
+    pr = repo.get_issue(number=pr_number)
+    pr_id = prtime.get_pr_id(repo_name, pr)
+
+    # get labels but without ETA related errors
+    labels = pr.get_labels()
+    label_names = [x.name for x in labels if not x.name.startswith(
+        prtime.eta_table.label_prefix)]
+    print("Current labels: [%s]" % label_names)
+
+    # parse eta
+    eta = prtime.parse_eta(pr, pr_id)
+    print("ETA: [%s]" % str(eta.d))
+
+    exit = 0
+
+    # validate
+    if eta is None:
+        exit = 1
+    else:
+        valid, err_labels = eta.validate_hours()
+        label_names += err_labels
+        if not valid:
+            exit = 2
+
+    # set new labels
+    print("Current labels: [%s]" % label_names)
+    pr.set_labels(*label_names)
+
+    print("Exit code: [%s]" % exit)
+    sys.exit(exit)
+
+
 if __name__ == "__main__":
 
     ctx = json.loads(os.getenv("INPUT_CONTEXT_GITHUB"))
@@ -26,42 +62,14 @@ if __name__ == "__main__":
     g = Github(token)
     repo = g.get_repo(repo_name)
 
-    review_state = e.get("review", {}).get("state", "")
-    if review_state == "approved":
-        print("APPROVED")
+    # review_state = e.get("review", {}).get("state", "")
+    # if review_state == "approved":
+    #     print("APPROVED")
 
     if e_name == "pull_request" and e_action == "edited":
         print("PR edited!")
-        pr = repo.get_issue(number=e_number)
-        pr_id = prtime.get_pr_id(repo_name, pr)
-
-        # get labels but without ETA related errors
-        labels = pr.get_labels()
-        label_names = [x.name for x in labels if not x.name.startswith(
-            prtime.eta_table.label_prefix)]
-        print("Current labels: [%s]" % label_names)
-
-        # parse eta
-        eta = prtime.parse_eta(pr, pr_id)
-        print("ETA: [%s]" % str(eta.d))
-
-        exit = 0
-
-        # validate
-        if eta is None:
-            exit = 1
-        else:
-            valid, err_labels = eta.validate_hours()
-            label_names += err_labels
-            if not valid:
-                exit = 2
-
-        # set new labels
-        print("Current labels: [%s]" % label_names)
-        pr.set_labels(*label_names)
-
-        print("Exit code: [%s]" % exit)
-        sys.exit(exit)
+        validate(repo_name, e_number)
 
     if e_action == "review_requested":
         print("REVIEW requested!")
+        validate(repo_name, e_number)
