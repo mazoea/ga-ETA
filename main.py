@@ -12,10 +12,19 @@ if __name__ == "__main__":
     print(ctx)
 
     repo = ctx["repository"]
-    pr_number = ctx["event"]["number"]
+    e = ctx["event"]
+    e_name = ctx["event_name"]
 
-    g = Github(token)
-    repo = g.get_repo(repo)
-    issue = repo.get_issue(number=pr_number)
-    title = issue.title
-    print(title)
+    # either pull_request
+    if e_name == "issue_comment":
+        print("EDITED issue!")
+
+    review_state = e.get("review", {}).get("state", "")
+    if review_state == "approved":
+        print("APPROVED")
+
+    # g = Github(token)
+    # repo = g.get_repo(repo)
+    # issue = repo.get_issue(number=pr_number)
+    # title = issue.title
+    # print(title)

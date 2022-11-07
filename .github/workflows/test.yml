@@ -1,6 +1,10 @@
 on:
   push:
   workflow_dispatch:
+  issue_comment:
+    types: [edited]
+  pull_request:
+    types: review_requested
 
 name: Test
 jobs:
