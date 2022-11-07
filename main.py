@@ -52,26 +52,43 @@ if __name__ == "__main__":
     del ctx["token"]
 
     e = ctx["event"]
-    print("event:\n%s" % json.dumps(e, indent=2))
+    # print("event:\n%s" % json.dumps(e, indent=2))
     del ctx["event"]
-    print("edited context:\n%s" % json.dumps(ctx, indent=2))
+    # print("edited context:\n%s" % json.dumps(ctx, indent=2))
 
     e_name = ctx["event_name"]
     e_action = e.get("action", "")
     e_number = e.get("number", -1)
+    pr_draft = e.get("draft", False)
     repo_name = ctx["repository"]
-
-    g = Github(token)
-    repo = g.get_repo(repo_name)
+    req_reviewers = ctx.get("requested_reviewers", [])
+    print(f"Name:[{e_name}] Action:[{e_action}] Number:[{e_number}] Draft:[{pr_draft}] Req. reviewers:[{len(req_reviewers)}]")
 
     # review_state = e.get("review", {}).get("state", "")
     # if review_state == "approved":
     #     print("APPROVED")
 
+    # validate conditions
+    do_validate = False
     if e_name == "pull_request" and e_action == "edited":
         print("PR edited!")
-        validate(repo_name, e_number)
+        do_validate = True
 
     if e_action == "review_requested":
         print("REVIEW requested!")
+        do_validate = True
+
+    # noop conditions
+    if do_validate and pr_draft is True:
+        print("Noop: draft PR!")
+        do_validate = False
+
+    if do_validate and len(req_reviewers) == 0:
+        print("Noop: no reviewer!")
+        do_validate = False
+
+    # are we validating?
+    if do_validate:
+        g = Github(token)
+        repo = g.get_repo(repo_name)
         validate(repo_name, e_number)
