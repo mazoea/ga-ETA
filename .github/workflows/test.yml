@@ -4,7 +4,9 @@ on:
   issue_comment:
     types: [edited]
   pull_request:
-    types: review_requested
+    types: [review_requested, edited]
+  pull_request_review:
+    types: [submitted]
 
 name: Test
 jobs:
