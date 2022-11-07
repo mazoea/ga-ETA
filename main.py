@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     token = ctx["token"]
     del ctx["token"]
-    print(ctx)
+    print(json.dumps(ctx, indent=2))
 
     repo = ctx["repository"]
     e = ctx["event"]
@@ -22,6 +22,9 @@ if __name__ == "__main__":
     review_state = e.get("review", {}).get("state", "")
     if review_state == "approved":
         print("APPROVED")
+        
+    if e.get("action", "") == "review_requested":
+        print("REVIEW requested!")
 
     # g = Github(token)
     # repo = g.get_repo(repo)
