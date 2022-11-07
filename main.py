@@ -56,12 +56,16 @@ if __name__ == "__main__":
     del ctx["event"]
     print("edited context:\n%s" % json.dumps(ctx, indent=2))
 
+    repo_name = ctx["repository"]
     e_name = ctx["event_name"]
+    opt_pr_d = ctx.get("pull_request", {})
+
     e_action = e.get("action", "")
     e_number = e.get("number", -1)
-    pr_draft = e.get("draft", False)
-    repo_name = ctx["repository"]
-    req_reviewers = ctx.get("requested_reviewers", [])
+
+    pr_draft = opt_pr_d.get("draft", False)
+    req_reviewers = opt_pr_d.get("requested_reviewers", [])
+
     print(f"Name:[{e_name}] Action:[{e_action}] Number:[{e_number}] Draft:[{pr_draft}] Req. reviewers:[{len(req_reviewers)}]")
 
     # review_state = e.get("review", {}).get("state", "")
