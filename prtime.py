@@ -220,7 +220,7 @@ class eta_table:
 
         return True
 
-    def validate_hours(self):
+    def validate_hours(self, pr=None):
         errors = []
         valid = True
 
@@ -241,17 +241,19 @@ class eta_table:
                 calc_stage_totals[stage] += hours[stage]
         stage_totals = self.stage_totals
 
+        html_url = pr.html_url if pr is not None else ""
+
         for stage in ETA.stages:
             if stage_totals[stage] != calc_stage_totals[stage]:
                 _logger.critical("Incorrect stage [%s] totals [%s] [%s] in [%s]\n\t->[%s]",
-                                 stage, stage_totals[stage], calc_stage_totals[stage], self.pr_id, pr.html_url)
+                                 stage, stage_totals[stage], calc_stage_totals[stage], self.pr_id, html_url)
                 valid = False
                 _add_error("stage_%s" % stage)
 
         calc_total_reported = sum(stage_totals.values())
         if calc_total_reported != self.total_reported:
             _logger.critical("Incorrect totals [%s] [%s] in [%s]\n\t->[%s]",
-                             calc_total_reported, self.total_reported, self.pr_id, pr.html_url)
+                             calc_total_reported, self.total_reported, self.pr_id, html_url)
             valid = False
             _add_error("totals")
 
@@ -470,7 +472,7 @@ def validate(gh, state="closed", sort_by=None):
         if eta is None:
             continue
 
-        err, _1 = eta.validate_hours()
+        err, _1 = eta.validate_hours(pr)
         if not err:
             msg = "Issue [%-70s] is OK" % (eta.pr_id,)
             ok_status.append((msg, pr))
