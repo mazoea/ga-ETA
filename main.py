@@ -51,14 +51,16 @@ if __name__ == "__main__":
         if eta is None:
             exit = 1
         else:
-            err, err_labels = eta.validate_hours()
+            valid, err_labels = eta.validate_hours()
             label_names += err_labels
-            if err:
+            if not valid:
                 exit = 2
 
         # set new labels
+        print("Current labels: [%s]" % label_names)
         pr.set_labels(*label_names)
 
+        print("Exit code: [%s]" % exit)
         sys.exit(exit)
 
     if e_action == "review_requested":
