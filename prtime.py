@@ -230,10 +230,10 @@ class eta_table:
             _logger.critical("Total reported is 0!")
             _add_error("total_is_0")
             valid = False
-        if self.cust_est == 0:
-            _logger.critical("Customer ETA is 0!")
-            _add_error("cust_is_0")
-            valid = False
+        # if self.cust_est == 0:
+        #     _logger.critical("Customer ETA is 0!")
+        #     _add_error("cust_is_0")
+        #     valid = False
 
         calc_stage_totals = defaultdict(int)
         for stage in ETA.stages:
@@ -472,7 +472,7 @@ def validate(gh, state="closed", sort_by=None):
         if eta is None:
             continue
 
-        err, _1 = eta.validate_hours(pr)
+        err, _1 = eta.validate_hours(pr=pr)
         if not err:
             msg = "Issue [%-70s] is OK" % (eta.pr_id,)
             ok_status.append((msg, pr))
