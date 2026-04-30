@@ -12,6 +12,7 @@ https://pygithub.readthedocs.io/en/latest/examples.html
 """
 import os
 import sys
+import ast
 import logging
 import argparse
 import re
@@ -82,13 +83,36 @@ def log_err(msg, pr, pr_id):
     _logger.info(tmpl, msg, pr_id, pr.html_url)
 
 
+_HOURS_EXPR_RE = re.compile(r"^\s*[\d\s+\-*/.()]+\s*$")
+
+
 def sum_hours(s, pr_id):
     """
         Try to sum the cell.
+
+        The cell is part of a markdown table inside a PR body, so the
+        author of any PR controls the string. Only accept arithmetic
+        over digits and the operators +-*/().  Anything else (function
+        calls, names, attribute access, dunder tricks) is rejected.
+        This used to be `float(eval(s))` which let any PR author run
+        arbitrary Python in the action container with the GitHub token
+        in scope.
     """
     try:
-        return float(eval(s))
-    except:
+        if s is None:
+            raise ValueError("empty")
+        text = str(s).strip()
+        if not text or not _HOURS_EXPR_RE.match(text):
+            raise ValueError("non-arithmetic input")
+        tree = ast.parse(text, mode="eval")
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Expression, ast.BinOp, ast.UnaryOp,
+                                  ast.Add, ast.Sub, ast.Mult, ast.Div,
+                                  ast.USub, ast.UAdd, ast.Constant, ast.Load)):
+                continue
+            raise ValueError("disallowed node: " + type(node).__name__)
+        return float(eval(compile(tree, "<sum_hours>", "eval"), {"__builtins__": {}}, {}))
+    except Exception:
         _logger.info("Cannot parse [%s] in [%s]", s, pr_id)
     return -1.
 
