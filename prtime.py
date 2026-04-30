@@ -83,7 +83,12 @@ def log_err(msg, pr, pr_id):
     _logger.info(tmpl, msg, pr_id, pr.html_url)
 
 
-_HOURS_EXPR_RE = re.compile(r"^\s*[\d\s+\-*/.()]+\s*$")
+_HOURS_EXPR_RE = re.compile(r"^ *[0-9 +\-*/.()]+ *$")
+# Cap input length and AST node count so a PR author can't DoS the action
+# runner by submitting `1+1+1+...` repeated tens of thousands of times.
+# Real ETA cells are short (a few additive terms); 256 is generous.
+_MAX_HOURS_EXPR_LEN = 256
+_MAX_HOURS_AST_NODES = 256
 
 
 def sum_hours(s, pr_id):
@@ -102,10 +107,18 @@ def sum_hours(s, pr_id):
         if s is None:
             raise ValueError("empty")
         text = str(s).strip()
-        if not text or not _HOURS_EXPR_RE.match(text):
+        if not text:
+            raise ValueError("empty")
+        if len(text) > _MAX_HOURS_EXPR_LEN:
+            raise ValueError("expression too long")
+        if not _HOURS_EXPR_RE.match(text):
             raise ValueError("non-arithmetic input")
         tree = ast.parse(text, mode="eval")
+        node_count = 0
         for node in ast.walk(tree):
+            node_count += 1
+            if node_count > _MAX_HOURS_AST_NODES:
+                raise ValueError("expression too complex")
             if isinstance(node, (ast.Expression, ast.BinOp, ast.UnaryOp,
                                   ast.Add, ast.Sub, ast.Mult, ast.Div,
                                   ast.USub, ast.UAdd, ast.Constant, ast.Load)):
