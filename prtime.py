@@ -193,16 +193,21 @@ class eta_table:
         d["stage_totals"] = stage_totals
         return d
 
-    # Minimum rows expected: header + alignment + 3 stages + Total + ETA est. + ETA cust.
-    # We require >= 6 so the indexed accesses below (rows[0], rows[2], rows[-1], rows[-3])
-    # can never IndexError -- a too-short table fails with a readable message instead.
-    MIN_ROWS = 6
+    # A complete ETA table is exactly 8 rows: header + markdown-alignment row +
+    # 3 stage rows (ETA / Developing / Review) + Total + ETA est. + ETA cust.
+    # We reject anything shorter so the indexed accesses below
+    # (rows[0], rows[2], rows[-1], rows[-3]) can never IndexError, and so a
+    # truncated table (e.g. missing the ETA est./cust. rows) fails here with a
+    # readable message instead of falling through to the generic
+    # "verification failed" branch.
+    MIN_ROWS = 8
 
     def _validate_keys(self):
         if len(self.rows) < self.MIN_ROWS:
             _logger.critical(
                 "ETA table too short: got %d row(s), expected at least %d "
-                "(header + alignment + 3 stage rows + Total + ETA est./cust.) [%s]\n\t->[%s]",
+                "(header + alignment + 3 stage rows + Total + ETA est. + ETA cust.) "
+                "[%s]\n\t->[%s]",
                 len(self.rows), self.MIN_ROWS, self.pr_id, self.pr.html_url)
             return False
 
@@ -289,6 +294,10 @@ def parse_eta_lines(pr):
     return l_arr
 
 
+PARSE_ERR_MISSING = "missing"
+PARSE_ERR_INVALID = "invalid"
+
+
 def parse_eta(pr, pr_id):
     """
 | Phases            | JH  |  JP  | TM |   JM | Total  |
@@ -299,6 +308,12 @@ def parse_eta(pr, pr_id):
 | Total                |   -  |   -   |  -    |   -    |         61 |
 | ETA est.             |      |       |       |         |     40  |
 | ETA cust.           |   -  |   -  |   -   |   -     |        40 |
+
+    Returns (eta, error) where:
+      - on success: (eta_table, None)
+      - table not found in body: (None, PARSE_ERR_MISSING)
+      - table found but malformed (too short, key check failed, _parse failed):
+            (None, PARSE_ERR_INVALID)
     """
     l_arr = parse_eta_lines(pr)
     if not l_arr:
@@ -306,7 +321,7 @@ def parse_eta(pr, pr_id):
             "ETA table not found in PR body [%s]\n\t->[%s]\n"
             "\tExpected a markdown table whose header matches /phases.*total/i.",
             pr_id, pr.html_url)
-        return None
+        return None, PARSE_ERR_MISSING
 
     # parse
     cols = [[x.strip() for x in x.split("|")] for x in l_arr]
@@ -314,9 +329,9 @@ def parse_eta(pr, pr_id):
 
     # verification #1
     if not eta.valid:
-        return None
+        return None, PARSE_ERR_INVALID
 
-    return eta
+    return eta, None
 
 
 def pr_with_eta(gh, start_at, state=None, base=None):
@@ -359,7 +374,7 @@ def find_cust_est(gh, issue_arr, state=None):
         for i, issue in enumerate(issue_arr):
             if issue not in pr.title:
                 continue
-            eta = parse_eta(pr, pr_id)
+            eta, _ = parse_eta(pr, pr_id)
             if eta is None:
                 log_err("Cannot parse", pr, pr_id)
                 continue
@@ -426,7 +441,7 @@ def find_eta_sum(gh, issue_arr):
         for i, issue in enumerate(issue_arr):
             if issue not in pr.title:
                 continue
-            eta = parse_eta(pr, pr_id)
+            eta, _ = parse_eta(pr, pr_id)
             if eta is None:
                 continue
 
@@ -459,14 +474,14 @@ def find_hours(gh, input_arr, input_are_ids):
             for i, issue in enumerate(input_arr):
                 if issue not in pr.title:
                     continue
-                eta = parse_eta(pr, pr_id)
+                eta, _ = parse_eta(pr, pr_id)
                 if eta is None:
                     continue
                 for dev, hours in eta.dev_hours.items():
                     devs[dev][issue] = hours
         else:
             if pr.number in input_arr:
-                eta = parse_eta(pr, pr_id)
+                eta, _ = parse_eta(pr, pr_id)
                 if eta is None:
                     continue
                 for dev, hours in eta.dev_hours.items():
@@ -487,7 +502,7 @@ def validate(gh, state="closed", sort_by=None):
 
     for repo_name, pr in pr_with_eta(gh, settings["start_time"], state=state):
         pr_id = get_pr_id(repo_name, pr)
-        eta = parse_eta(pr, pr_id)
+        eta, _ = parse_eta(pr, pr_id)
         if eta is None:
             continue
 

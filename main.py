@@ -24,14 +24,16 @@ def validate(repo_name: str, pr_number: int):
     print("Current labels: [%s]" % label_names)
 
     # parse eta
-    eta = prtime.parse_eta(pr, pr_id)
+    eta, parse_err = prtime.parse_eta(pr, pr_id)
 
     exit = 0
 
     # validate
     if eta is None:
-        print("ETA: [missing/invalid -- see log above]")
-        label_names.append(prtime.eta_table.label_prefix + "table_missing")
+        # parse_err is one of prtime.PARSE_ERR_MISSING ("missing")
+        # or prtime.PARSE_ERR_INVALID ("invalid"); label reflects which.
+        print("ETA: [table %s -- see log above]" % parse_err)
+        label_names.append(prtime.eta_table.label_prefix + "table_" + parse_err)
         exit = 1
     else:
         print("ETA: [%s]" % str(eta.d))
