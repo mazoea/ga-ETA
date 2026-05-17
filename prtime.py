@@ -193,7 +193,19 @@ class eta_table:
         d["stage_totals"] = stage_totals
         return d
 
+    # Minimum rows expected: header + alignment + 3 stages + Total + ETA est. + ETA cust.
+    # We require >= 6 so the indexed accesses below (rows[0], rows[2], rows[-1], rows[-3])
+    # can never IndexError -- a too-short table fails with a readable message instead.
+    MIN_ROWS = 6
+
     def _validate_keys(self):
+        if len(self.rows) < self.MIN_ROWS:
+            _logger.critical(
+                "ETA table too short: got %d row(s), expected at least %d "
+                "(header + alignment + 3 stage rows + Total + ETA est./cust.) [%s]\n\t->[%s]",
+                len(self.rows), self.MIN_ROWS, self.pr_id, self.pr.html_url)
+            return False
+
         ver_1 = self.rows[0].name.lower() == ETA.key_phase
         ver_2 = ETA.key_eta in self.rows[-1].name.lower()
         ver_3 = True
@@ -265,7 +277,7 @@ def parse_eta_lines(pr):
     rec_line = re.compile("[|].*[|]", re.I)
     l_arr = []
     state = 0
-    for l in pr.body.splitlines():
+    for l in (pr.body or "").splitlines():
         if state == 0:
             if rec_start.search(l):
                 state = 1
@@ -289,6 +301,13 @@ def parse_eta(pr, pr_id):
 | ETA cust.           |   -  |   -  |   -   |   -     |        40 |
     """
     l_arr = parse_eta_lines(pr)
+    if not l_arr:
+        _logger.critical(
+            "ETA table not found in PR body [%s]\n\t->[%s]\n"
+            "\tExpected a markdown table whose header matches /phases.*total/i.",
+            pr_id, pr.html_url)
+        return None
+
     # parse
     cols = [[x.strip() for x in x.split("|")] for x in l_arr]
     eta = eta_table(pr, pr_id, cols)
