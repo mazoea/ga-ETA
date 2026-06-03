@@ -12,6 +12,7 @@ https://pygithub.readthedocs.io/en/latest/examples.html
 """
 import os
 import sys
+import ast
 import logging
 import argparse
 import re
@@ -82,13 +83,49 @@ def log_err(msg, pr, pr_id):
     _logger.info(tmpl, msg, pr_id, pr.html_url)
 
 
+_HOURS_EXPR_RE = re.compile(r"^ *[0-9 +\-*/.()]+ *$")
+# Cap input length and AST node count so a PR author can't DoS the action
+# runner by submitting `1+1+1+...` repeated tens of thousands of times.
+# Real ETA cells are short (a few additive terms); 256 is generous.
+_MAX_HOURS_EXPR_LEN = 256
+_MAX_HOURS_AST_NODES = 256
+
+
 def sum_hours(s, pr_id):
     """
         Try to sum the cell.
+
+        The cell is part of a markdown table inside a PR body, so the
+        author of any PR controls the string. Only accept arithmetic
+        over digits and the operators +-*/().  Anything else (function
+        calls, names, attribute access, dunder tricks) is rejected.
+        This used to be `float(eval(s))` which let any PR author run
+        arbitrary Python in the action container with the GitHub token
+        in scope.
     """
     try:
-        return float(eval(s))
-    except:
+        if s is None:
+            raise ValueError("empty")
+        text = str(s).strip()
+        if not text:
+            raise ValueError("empty")
+        if len(text) > _MAX_HOURS_EXPR_LEN:
+            raise ValueError("expression too long")
+        if not _HOURS_EXPR_RE.match(text):
+            raise ValueError("non-arithmetic input")
+        tree = ast.parse(text, mode="eval")
+        node_count = 0
+        for node in ast.walk(tree):
+            node_count += 1
+            if node_count > _MAX_HOURS_AST_NODES:
+                raise ValueError("expression too complex")
+            if isinstance(node, (ast.Expression, ast.BinOp, ast.UnaryOp,
+                                  ast.Add, ast.Sub, ast.Mult, ast.Div,
+                                  ast.USub, ast.UAdd, ast.Constant, ast.Load)):
+                continue
+            raise ValueError("disallowed node: " + type(node).__name__)
+        return float(eval(compile(tree, "<sum_hours>", "eval"), {"__builtins__": {}}, {}))
+    except Exception:
         _logger.info("Cannot parse [%s] in [%s]", s, pr_id)
     return -1.
 
@@ -194,6 +231,15 @@ class eta_table:
         return d
 
     def _validate_keys(self):
+        # A malformed / empty markdown table (e.g. a PR body that matches the
+        # trigger regex but has no real ETA rows) would otherwise raise
+        # IndexError below on self.rows[0]/[2]/[-1]/[-3] and crash the action.
+        # Treat "too few rows" as "not a valid ETA table".
+        if len(self.rows) < 3:
+            _logger.critical(
+                "Cannot parse, not enough ETA rows [%s]\n\t->[%s]",
+                self.pr_id, self.pr.html_url)
+            return False
         ver_1 = self.rows[0].name.lower() == ETA.key_phase
         ver_2 = ETA.key_eta in self.rows[-1].name.lower()
         ver_3 = True
