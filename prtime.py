@@ -231,6 +231,15 @@ class eta_table:
         return d
 
     def _validate_keys(self):
+        # A malformed / empty markdown table (e.g. a PR body that matches the
+        # trigger regex but has no real ETA rows) would otherwise raise
+        # IndexError below on self.rows[0]/[2]/[-1]/[-3] and crash the action.
+        # Treat "too few rows" as "not a valid ETA table".
+        if len(self.rows) < 3:
+            _logger.critical(
+                "Cannot parse, not enough ETA rows [%s]\n\t->[%s]",
+                self.pr_id, self.pr.html_url)
+            return False
         ver_1 = self.rows[0].name.lower() == ETA.key_phase
         ver_2 = ETA.key_eta in self.rows[-1].name.lower()
         ver_3 = True

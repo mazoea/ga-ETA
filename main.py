@@ -25,14 +25,15 @@ def validate(repo_name: str, pr_number: int):
 
     # parse eta
     eta = prtime.parse_eta(pr, pr_id)
-    print("ETA: [%s]" % str(eta.d))
 
     exit = 0
 
     # validate
     if eta is None:
+        print("ETA: [None] (no valid ETA table found)")
         exit = 1
     else:
+        print("ETA: [%s]" % str(eta.d))
         valid, err_labels = eta.validate_hours()
         label_names += err_labels
         if not valid:
